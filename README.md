@@ -1,5 +1,7 @@
 # Status Bar Icon Settings
 
+**简体中文** · [English](README.en.md)
+
 面向小米 15 Ultra、澎湃 OS 4、SukiSU Ultra 和官方 LSPosed 2.2.1（7912）的 Kotlin 模块。设置页提供独立的移动网络、Wi‑Fi、无 SIM 卡和电池图标开关，以及顶部电量横线和详细日志开关。所有开关默认关闭。移动网络开关针对整个蜂窝图标组，包括信号格以及由同一组件渲染的 4G／5G 标识。模块修改 SystemUI 的显示逻辑，网络连接仍由系统管理。
 
 ## 安装
