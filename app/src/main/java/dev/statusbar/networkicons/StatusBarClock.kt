@@ -25,8 +25,6 @@ internal class StatusBarClock(
     private val view: TextView,
 ) : View.OnAttachStateChangeListener {
     private var options = StatusBarOptions()
-    private var originalFontFeatures: String? = null
-    private var tabularApplied = false
     private var showSeconds = false
     private var forceMinutes = false
     private var clearRenderedSeconds = false
@@ -61,15 +59,6 @@ internal class StatusBarClock(
         if (showSeconds != seconds || options.weekday != next.weekday) format = null
         this.forceMinutes = forceMinutes
         options = next
-        if (next.tabularClock != tabularApplied) {
-            if (next.tabularClock) {
-                originalFontFeatures = view.fontFeatureSettings
-                view.fontFeatureSettings = listOfNotNull(originalFontFeatures?.takeIf(String::isNotBlank), "'tnum'").joinToString(", ")
-            } else {
-                view.fontFeatureSettings = originalFontFeatures
-            }
-            tabularApplied = next.tabularClock
-        }
         if (color != customColor) restoreSystemColor()
         color = customColor
         if (showSeconds != seconds) {
@@ -143,8 +132,7 @@ internal class StatusBarClock(
         val time = formatter.format(Date(now), StringBuffer(), seconds).toString()
         val styled = showSeconds && options.dimSeconds && seconds.endIndex > seconds.beginIndex
         if (styled) {
-            val tint = view.currentTextColor
-            val dim = Color.argb((Color.alpha(tint) * 0.55f).toInt(), Color.red(tint), Color.green(tint), Color.blue(tint))
+            val dim = dimStatusBarColor(view.currentTextColor)
             view.text = SpannableString(time).apply {
                 setSpan(ForegroundColorSpan(dim), seconds.beginIndex, seconds.endIndex, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
@@ -155,3 +143,6 @@ internal class StatusBarClock(
         clearRenderedSeconds = false
     }
 }
+
+internal fun dimStatusBarColor(color: Int): Int =
+    Color.argb((Color.alpha(color) * 0.55f).toInt(), Color.red(color), Color.green(color), Color.blue(color))

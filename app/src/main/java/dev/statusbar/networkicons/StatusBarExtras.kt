@@ -1,9 +1,6 @@
 package dev.statusbar.networkicons
 
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.Path
 import android.media.AudioAttributes
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
@@ -18,19 +15,13 @@ import android.view.View
 import android.util.Log
 import android.widget.LinearLayout
 import android.widget.TextView
-import java.time.ZoneId
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 import java.util.concurrent.Executors
 import kotlin.math.roundToInt
-
-internal data class SpeedSample(val at: Long, val kb: Double)
 
 internal data class TimerProgress(val end: Long, val duration: Long)
 
 internal class StatusBarExtras(private val host: View) {
     private val density = host.resources.displayMetrics.density
-    private val second = label(11f)
     private val track = label(11f).apply { maxWidth = (92 * density).roundToInt() }
     private val privacy = label(10f)
     private val glance = label(11f).apply { maxWidth = (118 * density).roundToInt() }
@@ -38,49 +29,24 @@ internal class StatusBarExtras(private val host: View) {
         text = "•"
         contentDescription = "未读通知"
     }
-    private val graph = SpeedGraph(host.context)
     private var lastTrack: String? = null
     private var trackUntil = 0L
     @Volatile private var observedTrack: String? = null
     private var readingTrack = false
     private var trackRequest = 0
     private var mediaFailed = false
-    private var lastZone: String? = null
-    private var zoneId: ZoneId? = null
     private val chinese get() = host.resources.configuration.locales[0].language == "zh"
 
     fun update(
         options: StatusBarOptions,
         clock: TextView?,
-        speedView: View?,
-        showSecond: Boolean,
-        samples: List<SpeedSample>,
-        speedVisible: Boolean,
         privacyKinds: Set<String>,
         tint: Int,
         glanceText: String?,
         unreadVisible: Boolean,
     ) {
         val parent = clock?.parent as? LinearLayout ?: find<LinearLayout>("phone_status_bar_left_container")
-        val speedGroup = if (speedView is TextView) parent else find<LinearLayout>("system_icons")
-        if (options.speedGraph && speedVisible && samples.any { it.kb > 0 } && speedGroup != null) {
-            val index = if (speedView?.parent === speedGroup) speedGroup.indexOfChild(speedView) + 1 else 0
-            place(graph, speedGroup, index, (27 * density).roundToInt())
-            graph.update(samples, tint)
-        } else detach(graph)
-
         var index = if (parent == null) 0 else parent.indexOfChild(clock) + 1
-        if (graph.parent === parent && graph.parent != null) index = parent!!.indexOfChild(graph) + 1
-        if (options.secondClock && showSecond && parent != null) {
-            if (lastZone != options.secondClockZone) {
-                lastZone = options.secondClockZone
-                zoneId = runCatching { ZoneId.of(options.secondClockZone) }.getOrNull()
-            }
-            val time = zoneId?.let { ZonedDateTime.now(it).format(clockFormat) }
-            setLabel(second, time, tint, parent, index++)
-            second.contentDescription = time?.let { "${options.secondClockZone} $it" }
-        } else detach(second)
-
         val title = if (options.headphoneTrack && parent != null &&
             host.context.getSystemService(android.app.KeyguardManager::class.java)?.isKeyguardLocked != true
         ) readTrack() else {
@@ -122,7 +88,7 @@ internal class StatusBarExtras(private val host: View) {
     }
 
     fun clear() {
-        listOf(second, track, privacy, graph, glance, unread).forEach(::detach)
+        listOf(track, privacy, glance, unread).forEach(::detach)
         lastTrack = null
         trackUntil = 0
         observedTrack = null
@@ -197,54 +163,20 @@ internal class StatusBarExtras(private val host: View) {
         }
         if (label.text != value) label.text = value
         if (label.currentTextColor != tint) label.setTextColor(tint)
-        place(label, parent, index, -2)
+        place(label, parent, index)
     }
 
-    private fun place(view: View, parent: LinearLayout, index: Int, width: Int) {
+    private fun place(view: View, parent: LinearLayout, index: Int) {
         if (view.parent === parent && parent.indexOfChild(view) == index) return
         detach(view)
-        parent.addView(view, index.coerceIn(0, parent.childCount), LinearLayout.LayoutParams(width, -1))
+        parent.addView(view, index.coerceIn(0, parent.childCount), LinearLayout.LayoutParams(-2, -1))
     }
 
     private fun detach(view: View) {
         (view.parent as? LinearLayout)?.removeView(view)
     }
 
-    private class SpeedGraph(context: Context) : View(context) {
-        private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        private val path = Path()
-        private var samples = emptyList<SpeedSample>()
-
-        fun update(next: List<SpeedSample>, tint: Int) {
-            samples = next
-            paint.color = tint
-            invalidate()
-        }
-
-        override fun onDraw(canvas: Canvas) {
-            val peak = samples.maxByOrNull { it.kb } ?: return
-            if (peak.kb <= 0) return
-            val now = SystemClock.elapsedRealtime()
-            val left = 3 * resources.displayMetrics.density
-            val right = width - left
-            val yBottom = height * 0.66f
-            val yRange = height * 0.32f
-            fun x(sample: SpeedSample) = right - (right - left) * ((now - sample.at) / 10000f).coerceIn(0f, 1f)
-            fun y(sample: SpeedSample) = yBottom - yRange * (sample.kb / peak.kb).toFloat()
-            path.rewind()
-            samples.forEachIndexed { index, sample ->
-                if (index == 0) path.moveTo(x(sample), y(sample)) else path.lineTo(x(sample), y(sample))
-            }
-            paint.style = Paint.Style.STROKE
-            paint.strokeWidth = resources.displayMetrics.density
-            canvas.drawPath(path, paint)
-            paint.style = Paint.Style.FILL
-            canvas.drawCircle(x(peak), y(peak), 1.5f * paint.strokeWidth, paint)
-        }
-    }
-
     private companion object {
-        val clockFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
         val mediaAttributes = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build()
         val mediaReader = Executors.newSingleThreadExecutor()
         val main = android.os.Handler(android.os.Looper.getMainLooper())

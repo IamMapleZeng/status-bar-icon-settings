@@ -62,9 +62,9 @@ class NetworkIconModule : XposedModule() {
     private var calendarReadAt = 0L
     private var calendarReading = false
     private var calendarGeneration = 0
-    private var batteryEstimateRequest = 0
-    private var batteryEstimateText: String? = null
-    private var batteryEstimateUntil = 0L
+    private var batteryPercentageRequest = 0
+    private var batteryPercentageText: String? = null
+    private var batteryPercentageUntil = 0L
     private val icons = WeakHashMap<View, IconState>()
     private var foregroundReader: (() -> String?)? = null
     private var profile: Profile? = null
@@ -84,11 +84,9 @@ class NetworkIconModule : XposedModule() {
     private val foregroundCheck = Runnable { refreshForeground() }
     private var applyingVisibility = false
     private val extras = WeakHashMap<View, WeakReference<StatusBarExtras>>()
-    private val speedHistory = ArrayDeque<SpeedSample>()
     @Volatile private var timerReader: (() -> TimerProgress?)? = null
     @Volatile private var privacyReader: (() -> Set<String>)? = null
     private var timer: TimerProgress? = null
-    private var foregroundApp: String? = null
     private val extrasCheck = Runnable { install("Refresh status bar extras") { refreshExtras() } }
 
     private enum class Icon { MOBILE, WIFI, NO_SIM, BATTERY, SPEED, CLOCK, OTHER }
@@ -158,9 +156,9 @@ class NetworkIconModule : XposedModule() {
             calendarTitle = null
             calendarReadAt = 0L
         }
-        if (!next.options.batteryEstimate) {
-            batteryEstimateRequest++
-            batteryEstimateText = null
+        if (!next.options.batteryPercentage) {
+            batteryPercentageRequest++
+            batteryPercentageText = null
         }
         if (previous?.options?.notificationFlash != next.options.notificationFlash ||
             previous.options.notificationFlashStart != next.options.notificationFlashStart ||
@@ -177,7 +175,6 @@ class NetworkIconModule : XposedModule() {
         gamingPackages = packageNames(next.options.gamingApps)
         allowedPackages = next.options.notificationApps?.let(::packageNames)
         if (previous?.options?.notificationApps != next.options.notificationApps) unreadKeys.clear()
-        if (!next.options.speedGraph) speedHistory.clear()
         main.removeCallbacks(foregroundCheck)
         refreshForeground(refresh = false)
         if (previous?.networkSpeedThreshold != next.networkSpeedThreshold ||
@@ -444,12 +441,6 @@ class NetworkIconModule : XposedModule() {
             val view = chain.thisObject as? View
             if (view != null && Looper.myLooper() == Looper.getMainLooper() && icons[view]?.icon == Icon.SPEED) {
                 latestSpeed = networkSpeedKb(chain.getArg(0) as? String, chain.getArg(1) as? String)
-                if (settings?.options?.speedGraph == true && inPhoneStatusBar(view)) {
-                    val now = SystemClock.elapsedRealtime()
-                    if (speedHistory.lastOrNull()?.let { now - it.at < 100 } == true) speedHistory.removeLast()
-                    speedHistory.addLast(SpeedSample(now, latestSpeed ?: 0.0))
-                    pruneSpeedHistory(now)
-                }
                 refreshSpeed()
             }
             result
@@ -509,19 +500,21 @@ class NetworkIconModule : XposedModule() {
 
     private fun colorSpeed(view: View, state: IconState) {
         val speed = latestSpeed
-        val color = if (settings?.options?.speedColors == true && speed != null) when {
-            speed >= 1024 -> 0xFF00C853.toInt()
-            speed >= 50 -> 0xFF26894E.toInt()
-            else -> 0xFF708778.toInt()
-        } else null
+        val options = settings?.options
         val fields = speedFields ?: return
         for (field in listOf(fields.first, fields.second)) {
             val text = field.get(view) as? TextView ?: continue
-            if (color == null) state.colors.remove(text)?.let(text::setTextColor)
-            else {
-                state.colors.putIfAbsent(text, text.textColors)
-                if (text.currentTextColor != color) text.setTextColor(color)
+            if (options?.speedColors != true || speed == null) {
+                state.colors.remove(text)?.let(text::setTextColor)
+                continue
             }
+            val systemColors = state.colors.getOrPut(text) { text.textColors }
+            val color = when {
+                speed >= options.highSpeedKb -> options.highSpeedColor
+                speed >= options.mediumSpeedKb -> options.mediumSpeedColor
+                else -> dimStatusBarColor(systemColors.getColorForState(text.drawableState, systemColors.defaultColor))
+            }
+            if (text.currentTextColor != color) text.setTextColor(color)
         }
     }
 
@@ -622,9 +615,7 @@ class NetworkIconModule : XposedModule() {
 
     private fun refreshForeground(refresh: Boolean = true) {
         val host = lineHosts.keys.firstOrNull { it.isAttachedToWindow }
-        val options = settings?.options
-        val scopedClock = options?.secondClock == true && options.secondClockApps.isNotBlank()
-        val enabled = (readingPackages.isNotEmpty() || gamingPackages.isNotEmpty() || scopedClock) && foregroundReader != null
+        val enabled = (readingPackages.isNotEmpty() || gamingPackages.isNotEmpty()) && foregroundReader != null
         val app = if (enabled && host?.context?.getSystemService(PowerManager::class.java)?.isInteractive == true) {
             try {
                 foregroundReader?.invoke()
@@ -634,7 +625,6 @@ class NetworkIconModule : XposedModule() {
                 null
             }
         } else null
-        foregroundApp = app
         val next = when (app) {
             in gamingPackages -> Profile.GAMING
             in readingPackages -> Profile.READING
@@ -650,16 +640,12 @@ class NetworkIconModule : XposedModule() {
         if (enabled && foregroundReader != null) main.postDelayed(foregroundCheck, 1000)
     }
 
-    private fun pruneSpeedHistory(now: Long) {
-        while (speedHistory.firstOrNull()?.let { now - it.at > 10_000 } == true) speedHistory.removeFirst()
-    }
-
     private fun refreshExtras() {
         main.removeCallbacks(extrasCheck)
         val options = settings?.options ?: return
         val hostList = lineHosts.keys.filter { it.isAttachedToWindow }
-        val uiEnabled = options.speedGraph || options.headphoneTrack || options.secondClock || options.privacyLabels ||
-            options.calendarCountdown || options.batteryEstimate || options.unreadDot
+        val uiEnabled = options.headphoneTrack || options.privacyLabels ||
+            options.calendarCountdown || options.batteryPercentage || options.unreadDot
         if (uiEnabled || options.timerLine) main.postDelayed(extrasCheck, 1000)
         val interactive = hostList.firstOrNull()?.context?.getSystemService(PowerManager::class.java)?.isInteractive == true
         timer = null
@@ -675,19 +661,17 @@ class NetworkIconModule : XposedModule() {
         val context = hostList.firstOrNull()?.context ?: return
         val unlocked = context.getSystemService(KeyguardManager::class.java)?.isKeyguardLocked == false
         if (!unlocked) {
-            batteryEstimateRequest++
-            batteryEstimateText = null
+            batteryPercentageRequest++
+            batteryPercentageText = null
         }
         val glanceText = if (unlocked && profile == null) {
             val event = if (uiOptions.calendarCountdown) calendarCountdown(context, uiOptions.calendarTitle) else null
-            batteryEstimateText?.takeIf { SystemClock.elapsedRealtime() < batteryEstimateUntil } ?: event
+            batteryPercentageText?.takeIf { SystemClock.elapsedRealtime() < batteryPercentageUntil } ?: event
         } else null
-        pruneSpeedHistory(SystemClock.elapsedRealtime())
         var privacyKinds = emptySet<String>()
         if (uiOptions.privacyLabels) install("Read privacy indicators") {
             privacyKinds = privacyReader?.invoke().orEmpty()
         }
-        val clockApps = packageNames(uiOptions.secondClockApps)
         for (host in hostList) install("Status bar extras") {
             val controller = extras[host]?.get() ?: StatusBarExtras(host).also {
                 extras[host] = WeakReference(it)
@@ -700,14 +684,8 @@ class NetworkIconModule : XposedModule() {
             val clock = host.findViewById<View>(clockId) as? TextView ?: clockControllers.keys.firstOrNull {
                 it.isShown && generateSequence<View>(it) { view -> view.parent as? View }.any { it === host }
             }
-            val speedView = speedMirror?.get()?.takeIf { it.isShown }
-                ?: icons.entries.firstOrNull { (view, state) ->
-                    state.icon == Icon.SPEED && view.isShown &&
-                        generateSequence(view) { it.parent as? View }.any { it === host }
-                }?.key
             controller.update(
-                uiOptions, clock, speedView,
-                clockApps.isEmpty() || foregroundApp in clockApps, speedHistory.toList(), !speedBlocked && speedView != null,
+                uiOptions, clock,
                 privacyKinds, weatherTint?.defaultColor ?: clock?.currentTextColor ?: -1,
                 glanceText, unlocked && uiOptions.unreadDot && unreadKeys.isNotEmpty(),
             )
@@ -743,33 +721,25 @@ class NetworkIconModule : XposedModule() {
             ?: "日程 · ${minutes}分钟后"
     }
 
-    private fun requestBatteryEstimate(host: View) {
+    private fun requestBatteryPercentage(host: View) {
         val context = host.context
         if (context.getSystemService(KeyguardManager::class.java)?.isKeyguardLocked != false) return
-        val request = ++batteryEstimateRequest
+        val request = ++batteryPercentageRequest
         glanceReader.execute {
             val label = try {
-                val battery = context.registerReceiver(null, android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-                val plugged = battery?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0)?.let { it != 0 }
-                val remaining = if (plugged == true) {
-                    context.getSystemService(BatteryManager::class.java)?.computeChargeTimeRemaining()
-                } else if (plugged == false && Build.VERSION.SDK_INT >= 31) {
-                    context.getSystemService(PowerManager::class.java)?.batteryDischargePrediction?.toMillis()
-                } else null
-                remaining?.takeIf { it > 0 }?.let {
-                    val minutes = (it + 59_999) / 60_000
-                    val duration = if (minutes < 60) "${minutes}分钟" else "${minutes / 60}小时${minutes % 60}分"
-                    if (plugged == true) "约${duration}充满" else "约可用$duration"
-                }
+                context.getSystemService(BatteryManager::class.java)
+                    ?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+                    ?.takeIf { it in 0..100 }
+                    ?.let { "$it%" }
             } catch (error: RuntimeException) {
-                Log.w(LOG_TAG, "Battery estimate unavailable", error)
+                Log.w(LOG_TAG, "Battery percentage unavailable", error)
                 null
             }
             main.post {
-                if (request != batteryEstimateRequest || !host.isAttachedToWindow) return@post
-                batteryEstimateText = label
-                batteryEstimateUntil = SystemClock.elapsedRealtime() + 4500
-                install("Show battery estimate") { refreshExtras() }
+                if (request != batteryPercentageRequest || !host.isAttachedToWindow) return@post
+                batteryPercentageText = label
+                batteryPercentageUntil = SystemClock.elapsedRealtime() + 4500
+                install("Show battery percentage") { refreshExtras() }
             }
         }
     }
@@ -957,13 +927,13 @@ class NetworkIconModule : XposedModule() {
             val event = chain.getArg(0) as? MotionEvent
             var keepBlankTap = false
             if (host != null && event != null && host in lineHosts &&
-                (settings?.options?.clockGestures == true || settings?.options?.batteryEstimate == true ||
+                (settings?.options?.clockGestures == true || settings?.options?.batteryPercentage == true ||
                     weatherViews[host]?.get() != null)
             ) {
                 val detector = statusBarGestures.getOrPut(host) { createStatusBarGestureDetector(host) }
                 val handled = detector.onTouchEvent(event)
                 keepBlankTap = event.actionMasked == MotionEvent.ACTION_DOWN && handled &&
-                    isBatteryEstimateTap(host, event)
+                    isBatteryPercentageTap(host, event)
             }
             val result = chain.proceed()
             if (keepBlankTap) true else result
@@ -992,15 +962,15 @@ class NetworkIconModule : XposedModule() {
             }
 
             override fun onDown(event: MotionEvent): Boolean {
-                startedOnBlank = hostRef.get()?.let { isBatteryEstimateTap(it, event) } == true
+                startedOnBlank = hostRef.get()?.let { isBatteryPercentageTap(it, event) } == true
                 return startedOnBlank || weatherAt(event) != null || clockAt(event) != null
             }
 
             override fun onSingleTapUp(event: MotionEvent): Boolean {
                 if (startedOnBlank) {
                     val target = hostRef.get() ?: return false
-                    if (!isBatteryEstimateTap(target, event)) return false
-                    install("Read battery estimate") { requestBatteryEstimate(target) }
+                    if (!isBatteryPercentageTap(target, event)) return false
+                    install("Read battery percentage") { requestBatteryPercentage(target) }
                     return true
                 }
                 if (weatherAt(event) != null) return false
@@ -1034,8 +1004,8 @@ class NetworkIconModule : XposedModule() {
         }
     }
 
-    private fun isBatteryEstimateTap(host: View, event: MotionEvent): Boolean {
-        if (settings?.options?.batteryEstimate != true || profile != null || !containsTouch(host, event)) return false
+    private fun isBatteryPercentageTap(host: View, event: MotionEvent): Boolean {
+        if (settings?.options?.batteryPercentage != true || profile != null || !containsTouch(host, event)) return false
         val group = host as? ViewGroup ?: return false
         val batteryIndicatorId = host.resources.getIdentifier("battery_indicator", "id", SYSTEM_UI)
         val decorativeLine = host.findViewById<View>(batteryIndicatorId)

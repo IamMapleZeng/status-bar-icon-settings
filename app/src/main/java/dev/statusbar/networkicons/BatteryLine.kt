@@ -213,9 +213,9 @@ internal class BatteryLine(
     private fun drawBattery(canvas: Canvas, width: Float, now: Long, interactive: Boolean) {
         val alpha = paint.alpha
         paint.color = if (!batteryColors) color else when {
-            level <= 1500 -> 0xFFD32F2F.toInt()
-            level <= 3500 -> 0xFFF57C00.toInt()
-            else -> 0xFF32A852.toInt()
+            level < 3000 -> LOW_LEVEL_COLOR
+            level <= 6000 -> MEDIUM_LEVEL_COLOR
+            else -> HIGH_LEVEL_COLOR
         }
         paint.alpha = alpha
 

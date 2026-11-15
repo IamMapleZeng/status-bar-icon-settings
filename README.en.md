@@ -73,7 +73,7 @@ Open the status bar options from **Advanced options**, make your changes, and ta
 
 | Feature | How to use and test it |
 | --- | --- |
-| Battery time remaining | Enable the battery estimate in advanced options and tap an empty part of the top status bar while unlocked. The system's estimate for remaining battery life or time to full charge briefly appears next to the clock. The battery line has its own switch. The current display stays in place when the system has no estimate. |
+| Battery percentage | Enable the battery percentage option in advanced settings. While unlocked, tap an empty part of the top status bar to briefly show the current charge next to the clock, for example `57%`. The battery line has its own switch. |
 | Next calendar event | Enable the countdown and grant calendar permission. Create a timed event starting within 30 minutes in the system calendar, then unlock and check the minutes beside the clock. Event titles are hidden by default and can be enabled in advanced options. Calendar data refreshes roughly every 30 seconds. |
 | Raindrop animation | Enable weather, rain alerts, and the raindrop effect. With the screen on, a raindrop animation plays once when a rain alert first appears. |
 | Full-charge animation | With the screen on, charge from below 100% to 100%. Particles along the top form a star and fade out. The animation plays at most once per charger connection. |
@@ -91,21 +91,19 @@ With the screen on, send a message from another device. Check that the flash use
 | Option | How to use and test it |
 | --- | --- |
 | Rain alert | Enable weather display as well. If Xiaomi Weather updated within the last hour and the chance of rain in the next hour reaches 60%, the far right shows the rain probability. The wording follows the selected weather language. At other times it displays regular weather. The weather source checked for this feature provides hourly probabilities. |
-| Network speed graph | Enable real-time network speed in system settings. Download a file and watch the graph and peak for the last 10 seconds. The graph hides when the configured speed threshold hides the indicator or when all samples in the last 10 seconds are zero. |
 | Track title on headphones | Connect headphones and switch to a new song. If the player supplies a title and audio is routed to the headphones, the title appears beside the clock for about four seconds. The title is hidden on the lock screen. |
 | System timer progress line | Start a timer longer than 30 seconds in Xiaomi Clock and return to the launcher. The blue line at the top shrinks as time runs out and turns orange for the last 10 seconds. Canceling or finishing the timer restores the original battery line setting. This relies on the system clock's countdown notification. |
 | Hourly star | Keep the screen on at any hour from 07:00 through 21:00. A star sweeps across the top of the screen on the hour. |
 | Charging particles | Keep the screen on while charging past 80% or reaching 100%. A short particle effect appears at the battery level. Turning on the feature after reaching a threshold does not replay the effect. |
-| Second time zone | Choose London or another time zone and check the second time display next to the clock. After choosing which apps should show it, open and exit one of them to verify the display scope. |
 | Privacy labels | Open an app that is using the camera or microphone and check the text beside the system privacy indicator. Indicator positions and data sources can vary by ROM. |
 
-All eight options default to off. Once SystemUI has loaded this version, saved switches typically take effect within a second.
+These options default to off. Once SystemUI has loaded this version, saved switches typically take effect within a second.
 
 - **Weather** is off by default. It shows the current temperature from Xiaomi Weather at the far right, when data is available. Long-press the display to open Xiaomi Weather. Add a city and refresh it in Xiaomi Weather first. Weather conditions are off by default and support the system language, Simplified Chinese, or English. Temperature uses the unit set in Xiaomi Weather. Reading and gaming profiles hide weather.
-- **Network speed colors** change at 50 and 1024 KB/s. With smoothing enabled, the indicator appears above the threshold and hides after the reading stays at or below 60% of the threshold for at least three seconds. Timing depends on the system's sampling interval.
-- **Battery level colors** use red at 15% or below, orange from 16% through 35%, and green above 35%. These colors take precedence over the custom line color and also set the base color for charging animations. Turning this option off restores the previously selected color.
-- **Clock options** include the day of the week, dimmed seconds, and tabular digits where supported by the system font. When gestures are enabled, tap to toggle seconds temporarily or long-press to open alarms. Seconds dimming has its own setting.
-- **Icon order** supports rearranging network speed, Wi-Fi, signal, and Bluetooth. The battery can sit at either end of the group. Spacing ranges from 0 to 12 dp, and network speed can appear next to the clock.
+- **Network speed colors** dim low speeds like the clock seconds, default to orange for medium speeds and red for high speeds. Both colors can be customized. The medium and high ranges start at 50 and 1024 KB/s by default. Both thresholds can be changed in advanced settings. With smoothing enabled, the indicator appears above the threshold and hides after the reading stays at or below 60% of the threshold for at least three seconds. Timing depends on the system's sampling interval.
+- **Battery level colors** use red below 30%, orange from 30% through 60%, and green above 60%. These colors take precedence over the custom line color and also set the base color for charging animations. Turning this option off restores the previously selected color.
+- **Clock options** include the day of the week and dimmed seconds. When gestures are enabled, tap to toggle seconds temporarily or long-press to open alarms. Seconds dimming has its own setting.
+- Open **Icon order** and long-press an icon name to drag it into place. You can also restore the system order. The battery can sit at either end of the group. Spacing ranges from 0 to 12 dp, and network speed can appear next to the clock.
 - **Notification icon allowlist** applies to the top status bar. An empty allowlist hides all top status bar notification icons when enabled.
 - **App profiles** keep the clock and battery line in reading mode and retain the system network speed indicator in gaming mode. Gaming takes precedence when an app is in both profiles. The regular settings return when switching to other apps. Real-time network speed must be enabled in the system.
 
