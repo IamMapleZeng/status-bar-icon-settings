@@ -12,6 +12,23 @@ internal val LOW_LEVEL_COLOR = 0xFFD32F2F.toInt()
 internal val MEDIUM_LEVEL_COLOR = 0xFFF57C00.toInt()
 internal val HIGH_LEVEL_COLOR = 0xFF32A852.toInt()
 
+internal const val DEFAULT_BATTERY_MEDIUM_START = 30
+internal const val DEFAULT_BATTERY_MEDIUM_END = 60
+
+internal data class BatteryLineColors(
+    val mediumStart: Int = DEFAULT_BATTERY_MEDIUM_START,
+    val mediumEnd: Int = DEFAULT_BATTERY_MEDIUM_END,
+    val low: Int = LOW_LEVEL_COLOR,
+    val medium: Int = MEDIUM_LEVEL_COLOR,
+    val high: Int = HIGH_LEVEL_COLOR,
+) {
+    fun colorAt(percent: Double): Int = when {
+        percent < mediumStart -> low
+        percent <= mediumEnd -> medium
+        else -> high
+    }
+}
+
 internal data class StatusBarOptions(
     val showWeather: Boolean = false,
     val showWeatherCondition: Boolean = false,
@@ -23,6 +40,7 @@ internal data class StatusBarOptions(
     val highSpeedColor: Int = LOW_LEVEL_COLOR,
     val speedSmoothing: Boolean = false,
     val batteryColors: Boolean = false,
+    val batteryLineColors: BatteryLineColors = BatteryLineColors(),
     val weekday: Boolean = false,
     val dimSeconds: Boolean = false,
     val clockGestures: Boolean = false,
@@ -60,6 +78,11 @@ internal data class StatusBarOptions(
             .putInt("high_speed_color", highSpeedColor)
             .putBoolean("speed_smoothing", speedSmoothing)
             .putBoolean("battery_colors", batteryColors)
+            .putInt("battery_medium_start", batteryLineColors.mediumStart)
+            .putInt("battery_medium_end", batteryLineColors.mediumEnd)
+            .putInt("battery_low_color", batteryLineColors.low)
+            .putInt("battery_medium_color", batteryLineColors.medium)
+            .putInt("battery_high_color", batteryLineColors.high)
             .putBoolean("clock_weekday", weekday)
             .putBoolean("clock_dim_seconds", dimSeconds)
             .putBoolean("clock_gestures", clockGestures)
@@ -93,6 +116,9 @@ internal data class StatusBarOptions(
             val medium = values["medium_speed_kb"] as? Int ?: DEFAULT_MEDIUM_SPEED_KB
             val high = values["high_speed_kb"] as? Int ?: DEFAULT_HIGH_SPEED_KB
             val validSpeedRanges = medium > 0 && high > medium
+            val batteryStart = values["battery_medium_start"] as? Int ?: DEFAULT_BATTERY_MEDIUM_START
+            val batteryEnd = values["battery_medium_end"] as? Int ?: DEFAULT_BATTERY_MEDIUM_END
+            val validBatteryRange = batteryStart in 1..98 && batteryEnd in (batteryStart + 1)..99
             return StatusBarOptions(
                 showWeather = values["show_weather"] == true,
                 showWeatherCondition = values["show_weather_condition"] == true,
@@ -105,6 +131,13 @@ internal data class StatusBarOptions(
                 highSpeedColor = values["high_speed_color"] as? Int ?: LOW_LEVEL_COLOR,
                 speedSmoothing = values["speed_smoothing"] == true,
                 batteryColors = values["battery_colors"] == true,
+                batteryLineColors = BatteryLineColors(
+                    mediumStart = if (validBatteryRange) batteryStart else DEFAULT_BATTERY_MEDIUM_START,
+                    mediumEnd = if (validBatteryRange) batteryEnd else DEFAULT_BATTERY_MEDIUM_END,
+                    low = values["battery_low_color"] as? Int ?: LOW_LEVEL_COLOR,
+                    medium = values["battery_medium_color"] as? Int ?: MEDIUM_LEVEL_COLOR,
+                    high = values["battery_high_color"] as? Int ?: HIGH_LEVEL_COLOR,
+                ),
                 weekday = values["clock_weekday"] == true,
                 dimSeconds = values["clock_dim_seconds"] == true,
                 clockGestures = values["clock_gestures"] == true,

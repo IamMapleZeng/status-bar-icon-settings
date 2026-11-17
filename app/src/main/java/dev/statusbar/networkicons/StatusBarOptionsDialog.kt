@@ -122,7 +122,35 @@ internal fun showStatusBarOptions(
         draft = draft.copy(highSpeedColor = it)
     }
     toggle("网速防抖（连续低速至少 3 秒才隐藏）", initial.speedSmoothing) { draft = draft.copy(speedSmoothing = it) }
-    toggle("电量线按电量变色（绿色／橙色／红色）", initial.batteryColors) { draft = draft.copy(batteryColors = it) }
+    toggle("电量线按电量变色", initial.batteryColors) { draft = draft.copy(batteryColors = it) }
+    val batteryStart = field("中电量起点（%，低于此值为低电量）", initial.batteryLineColors.mediumStart.toString())
+    val batteryEnd = field("中电量上限（%，高于此值为高电量）", initial.batteryLineColors.mediumEnd.toString())
+    batteryStart.inputType = android.text.InputType.TYPE_CLASS_NUMBER
+    batteryEnd.inputType = android.text.InputType.TYPE_CLASS_NUMBER
+    fun readBatteryLineColors(): BatteryLineColors? {
+        val start = batteryStart.text.toString().trim().toIntOrNull()
+        if (start == null || start !in 1..98) {
+            batteryStart.error = "请输入 1–98 的整数"
+            batteryStart.requestFocus()
+            return null
+        }
+        val end = batteryEnd.text.toString().trim().toIntOrNull()
+        if (end == null || end !in (start + 1)..99) {
+            batteryEnd.error = "请输入大于中电量起点且不超过 99 的整数"
+            batteryEnd.requestFocus()
+            return null
+        }
+        return draft.batteryLineColors.copy(mediumStart = start, mediumEnd = end)
+    }
+    colorButton(R.string.low_battery_line_color, { draft.batteryLineColors.low }) {
+        draft = draft.copy(batteryLineColors = draft.batteryLineColors.copy(low = it))
+    }
+    colorButton(R.string.medium_battery_line_color, { draft.batteryLineColors.medium }) {
+        draft = draft.copy(batteryLineColors = draft.batteryLineColors.copy(medium = it))
+    }
+    colorButton(R.string.high_battery_line_color, { draft.batteryLineColors.high }) {
+        draft = draft.copy(batteryLineColors = draft.batteryLineColors.copy(high = it))
+    }
     toggle("系统计时器进度线", initial.timerLine) { draft = draft.copy(timerLine = it) }
     toggle("充电达到 80% 和 100% 时显示粒子", initial.chargeParticles) { draft = draft.copy(chargeParticles = it) }
     toggle("点击状态栏空白处查看电量百分比", initial.batteryPercentage) { draft = draft.copy(batteryPercentage = it) }
@@ -167,7 +195,9 @@ internal fun showStatusBarOptions(
         setOnClickListener {
             val duration = flashSeconds.text.toString().trim().toIntOrNull()?.takeIf { it in FLASH_SECONDS }
                 ?: draft.notificationFlashSeconds
-            showStatusBarPreview(context, draft.copy(notificationFlashSeconds = duration), batteryColor, chargingAnimation)
+            val colors = readBatteryLineColors() ?: return@setOnClickListener
+            val preview = draft.copy(notificationFlashSeconds = duration, batteryLineColors = colors)
+            showStatusBarPreview(context, preview, batteryColor, chargingAnimation)
         }
     })
     toggle("耳机播放时短暂显示新曲名", initial.headphoneTrack) { draft = draft.copy(headphoneTrack = it) }
@@ -185,6 +215,7 @@ internal fun showStatusBarOptions(
         .setPositiveButton(android.R.string.ok, null).show()
     dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
     dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+        val batteryLineColors = readBatteryLineColors() ?: return@setOnClickListener
         val mediumKb = mediumSpeed.text.toString().trim().toIntOrNull()
         if (mediumKb == null || mediumKb <= 0) {
             mediumSpeed.error = "请输入大于 0 的整数"
@@ -220,6 +251,7 @@ internal fun showStatusBarOptions(
         onSave(draft.copy(
             mediumSpeedKb = mediumKb,
             highSpeedKb = highKb,
+            batteryLineColors = batteryLineColors,
             iconSpacing = dp,
             notificationApps = draft.notificationApps?.let { packageNames(allowed.text.toString()).joinToString(",") },
             notificationFlashSeconds = seconds,

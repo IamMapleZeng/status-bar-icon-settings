@@ -29,7 +29,7 @@ import kotlin.math.sin
 internal class BatteryLine(
     private val host: View,
     private val color: Int,
-    private val batteryColors: Boolean,
+    private val batteryColors: BatteryLineColors?,
     private val animation: ChargingAnimation,
     private val showBattery: Boolean,
     private val hourlyStar: Boolean,
@@ -212,11 +212,7 @@ internal class BatteryLine(
 
     private fun drawBattery(canvas: Canvas, width: Float, now: Long, interactive: Boolean) {
         val alpha = paint.alpha
-        paint.color = if (!batteryColors) color else when {
-            level < 3000 -> LOW_LEVEL_COLOR
-            level <= 6000 -> MEDIUM_LEVEL_COLOR
-            else -> HIGH_LEVEL_COLOR
-        }
+        paint.color = batteryColors?.colorAt(level / 100.0) ?: color
         paint.alpha = alpha
 
         val progress = ((now - animationStart) % CYCLE_MS).toFloat() / CYCLE_MS
@@ -299,8 +295,8 @@ internal class BatteryLine(
 
     private var animationHeight = 0
 
-    fun previewCharge() {
-        level = 7600
+    fun previewCharge(percent: Double) {
+        level = (percent * 100).roundToInt()
         charging = true
         animationStart = SystemClock.uptimeMillis()
         resize()

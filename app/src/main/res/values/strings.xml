@@ -1,4 +1,7 @@
 <resources>
+    <string name="low_battery_line_color">低电量线颜色</string>
+    <string name="medium_battery_line_color">中电量线颜色</string>
+    <string name="high_battery_line_color">高电量线颜色</string>
     <string name="notification_flash_start">渐变起始色</string>
     <string name="notification_flash_end">渐变结束色</string>
     <string name="color_setting_value">%1$s（%2$s）</string>

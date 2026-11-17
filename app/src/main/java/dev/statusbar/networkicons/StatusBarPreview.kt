@@ -41,8 +41,14 @@ internal fun showStatusBarPreview(
     val flash = NotificationFlash(bar)
     val rain = StatusBarEffect(weather)
     val finale = StatusBarEffect(bar)
-    val line = BatteryLine(bar, batteryColor, options.batteryColors, chargingAnimation, true, false, false)
+    val colors = options.batteryLineColors.takeIf { options.batteryColors }
+    val line = BatteryLine(bar, batteryColor, colors, chargingAnimation, true, false, false)
     val stopCharge = Runnable { line.uninstall() }
+    fun previewCharge(percent: Double) {
+        bar.removeCallbacks(stopCharge)
+        line.previewCharge(percent)
+        bar.postDelayed(stopCharge, 3000)
+    }
     fun action(label: String, play: () -> Unit) {
         body.addView(Button(context).apply {
             text = label
@@ -51,9 +57,20 @@ internal fun showStatusBarPreview(
     }
     action("试闪一次") { flash.start(options) }
     action("预览充电动画") {
-        bar.removeCallbacks(stopCharge)
-        line.previewCharge()
-        bar.postDelayed(stopCharge, 3000)
+        if (colors == null) {
+            previewCharge(76.0)
+        } else {
+            val levels = listOf(colors.mediumStart / 2.0, (colors.mediumStart + colors.mediumEnd) / 2.0,
+                (colors.mediumEnd + 100) / 2.0)
+            val labels = arrayOf(
+                "低电量（低于 ${colors.mediumStart}%）",
+                "中电量（${colors.mediumStart}%–${colors.mediumEnd}%）",
+                "高电量（高于 ${colors.mediumEnd}%）",
+            )
+            AlertDialog.Builder(context).setTitle("选择预览电量")
+                .setItems(labels) { _, index -> previewCharge(levels[index]) }
+                .setNegativeButton(android.R.string.cancel, null).show()
+        }
     }
     action("预览充满电收尾") { finale.play(rain = false) }
     action("预览降雨提醒") { rain.play(rain = true) }

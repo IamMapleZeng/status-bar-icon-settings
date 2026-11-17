@@ -49,7 +49,7 @@ class NetworkIconModule : XposedModule() {
     private val clockControllers = WeakHashMap<TextView, WeakReference<StatusBarClock>>()
     private var clockUpdate: Method? = null
     private data class LineAppearance(
-        val color: Int, val batteryColors: Boolean, val animation: ChargingAnimation,
+        val color: Int, val batteryColors: BatteryLineColors?, val animation: ChargingAnimation,
         val showBattery: Boolean, val star: Boolean, val particles: Boolean, val finale: Boolean,
     )
     private data class ActiveLine(val appearance: LineAppearance, val drawable: WeakReference<BatteryLine>)
@@ -346,7 +346,8 @@ class NetworkIconModule : XposedModule() {
         val particles = profile == null && options.chargeParticles
         val finale = profile == null && options.chargeFinale
         val appearance = LineAppearance(
-            settings.batteryLineColor, options.batteryColors, settings.chargingAnimation, showBattery, star, particles, finale,
+            settings.batteryLineColor, options.batteryLineColors.takeIf { options.batteryColors },
+            settings.chargingAnimation, showBattery, star, particles, finale,
         )
         val previous = lineHosts[view]
         val enabled = showBattery || star || particles || finale || (profile == null && options.timerLine)
