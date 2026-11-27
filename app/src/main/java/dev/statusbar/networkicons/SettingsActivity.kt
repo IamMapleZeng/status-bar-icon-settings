@@ -28,6 +28,7 @@ class SettingsActivity : Activity() {
     private lateinit var wifi: Switch
     private lateinit var noSim: Switch
     private lateinit var battery: Switch
+    private lateinit var hideClock: Switch
     private lateinit var speedThreshold: Button
     private var selectedSpeedThreshold: Int? = null
     private lateinit var batteryLine: Switch
@@ -87,6 +88,7 @@ class SettingsActivity : Activity() {
         wifi = addToggle(icons, R.string.hide_wifi)
         noSim = addToggle(icons, R.string.hide_no_sim)
         battery = addToggle(icons, R.string.hide_battery)
+        hideClock = addToggle(icons, R.string.hide_clock)
         speedThreshold = addAction(icons) { chooseSpeedThreshold() }
         updateSpeedThresholdButton()
 
@@ -228,6 +230,7 @@ class SettingsActivity : Activity() {
                     wifi.isChecked = settings.hideWifi
                     noSim.isChecked = settings.hideNoSim
                     battery.isChecked = settings.hideBattery
+                    hideClock.isChecked = settings.hideClock
                     selectedSpeedThreshold = settings.networkSpeedThreshold
                     updateSpeedThresholdButton()
                     batteryLine.isChecked = settings.batteryLine
@@ -260,6 +263,7 @@ class SettingsActivity : Activity() {
             hideWifi = wifi.isChecked,
             hideNoSim = noSim.isChecked,
             hideBattery = battery.isChecked,
+            hideClock = hideClock.isChecked,
             networkSpeedThreshold = selectedSpeedThreshold,
             batteryLine = batteryLine.isChecked,
             batteryLineColor = selectedColor,
@@ -410,6 +414,7 @@ class SettingsActivity : Activity() {
         wifi.isEnabled = enabled
         noSim.isEnabled = enabled
         battery.isEnabled = enabled
+        hideClock.isEnabled = enabled
         speedThreshold.isEnabled = enabled
         speedThreshold.alpha = if (enabled) 1f else 0.55f
         batteryLine.isEnabled = enabled

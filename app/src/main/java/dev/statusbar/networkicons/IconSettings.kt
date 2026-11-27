@@ -21,6 +21,7 @@ internal data class IconSettings(
     val hideWifi: Boolean,
     val hideNoSim: Boolean,
     val hideBattery: Boolean,
+    val hideClock: Boolean,
     val networkSpeedThreshold: Int?,
     val batteryLine: Boolean,
     val batteryLineColor: Int,
@@ -35,6 +36,7 @@ internal data class IconSettings(
         .putBoolean("hide_wifi", hideWifi)
         .putBoolean("hide_no_sim", hideNoSim)
         .putBoolean("hide_battery", hideBattery)
+        .putBoolean("hide_clock", hideClock)
         .apply {
             if (networkSpeedThreshold == null) remove("network_speed_threshold")
             else putInt("network_speed_threshold", networkSpeedThreshold)
@@ -58,6 +60,7 @@ internal data class IconSettings(
                 values["hide_wifi"] == true,
                 values["hide_no_sim"] == true,
                 values["hide_battery"] == true,
+                values["hide_clock"] == true,
                 (values["network_speed_threshold"] as? Int)?.takeIf { it >= 0 },
                 values["battery_line"] == true,
                 (values["battery_line_color"] as? Int) ?: DEFAULT_LINE_COLOR,

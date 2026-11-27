@@ -577,6 +577,7 @@ class NetworkIconModule : XposedModule() {
     private fun applyIcon(view: View, state: IconState) {
         val current = settings ?: return
         val hide = when {
+            state.icon == Icon.CLOCK && current.hideClock -> true
             profile == Profile.READING && inPhoneStatusBar(view) -> state.icon != Icon.CLOCK
             profile == Profile.GAMING && inPhoneStatusBar(view) -> state.icon != Icon.SPEED
             else -> when (state.icon) {

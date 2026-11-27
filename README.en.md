@@ -4,6 +4,8 @@
 
 A Kotlin module for the Xiaomi 15 Ultra running HyperOS 4, SukiSU Ultra, and official LSPosed 2.2.1 (7912). The settings screen offers independent controls for the mobile network, Wi-Fi, no-SIM, and battery icons, plus a battery line at the top of the screen and detailed logging. All switches default to off. The mobile network switch controls the entire cellular icon group, including signal bars and any 4G or 5G labels rendered by the same component. The module changes how SystemUI displays these icons. Android continues to manage network connections.
 
+Enable **Hide time** in the **Status bar icons** section to hide the status bar clock. The switch defaults to off and saves automatically.
+
 ## Installation
 
 1. Confirm that SukiSU Ultra and your Zygisk implementation are running. In LSPosed Manager, verify that official LSPosed 2.2.1 (7912) is active. Keep LSPosed safe mode available and make sure you have either an authorized USB debugging connection or access to SukiSU Manager for recovery.
