@@ -647,7 +647,7 @@ class NetworkIconModule : XposedModule() {
         val options = settings?.options ?: return
         val hostList = lineHosts.keys.filter { it.isAttachedToWindow }
         val uiEnabled = options.headphoneTrack || options.privacyLabels ||
-            options.calendarCountdown || options.batteryPercentage || options.unreadDot
+            options.calendarCountdown || options.batteryPercentage || options.unreadDot || options.chargingPower
         if (uiEnabled || options.timerLine) main.postDelayed(extrasCheck, 1000)
         val interactive = hostList.firstOrNull()?.context?.getSystemService(PowerManager::class.java)?.isInteractive == true
         timer = null
@@ -662,6 +662,7 @@ class NetworkIconModule : XposedModule() {
         val uiOptions = if (profile == null) options else StatusBarOptions(privacyLabels = options.privacyLabels)
         val context = hostList.firstOrNull()?.context ?: return
         val unlocked = context.getSystemService(KeyguardManager::class.java)?.isKeyguardLocked == false
+        val chargingPower = if (uiOptions.chargingPower) readChargingPower(context) else null
         if (!unlocked) {
             batteryPercentageRequest++
             batteryPercentageText = null
@@ -690,8 +691,27 @@ class NetworkIconModule : XposedModule() {
                 uiOptions, clock,
                 privacyKinds, weatherTint?.defaultColor ?: clock?.currentTextColor ?: -1,
                 glanceText, unlocked && uiOptions.unreadDot && unreadKeys.isNotEmpty(),
+                chargingPower,
             )
         }
+    }
+
+    private fun readChargingPower(context: android.content.Context): String? = try {
+        val battery = context.registerReceiver(null, android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val plugged = battery?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0
+        val status = battery?.getIntExtra(BatteryManager.EXTRA_STATUS, BatteryManager.BATTERY_STATUS_UNKNOWN)
+        val voltageMv = battery?.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0) ?: 0
+        val currentUa = context.getSystemService(BatteryManager::class.java)
+            ?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW) ?: Int.MIN_VALUE
+        if (plugged != 0 && status == BatteryManager.BATTERY_STATUS_CHARGING &&
+            voltageMv > 0 && currentUa > 0
+        ) {
+            val watts = currentUa.toDouble() * voltageMv / 1_000_000_000.0
+            String.format(java.util.Locale.ROOT, "%.1f W", watts)
+        } else null
+    } catch (error: RuntimeException) {
+        Log.w(LOG_TAG, "Charging power unavailable", error)
+        null
     }
 
     private fun calendarCountdown(context: android.content.Context, showTitle: Boolean): String? {

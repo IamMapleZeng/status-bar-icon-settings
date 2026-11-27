@@ -24,6 +24,7 @@ internal class StatusBarExtras(private val host: View) {
     private val density = host.resources.displayMetrics.density
     private val track = label(11f).apply { maxWidth = (92 * density).roundToInt() }
     private val privacy = label(10f)
+    private val power = label(11f)
     private val glance = label(11f).apply { maxWidth = (118 * density).roundToInt() }
     private val unread = label(13f).apply {
         text = "•"
@@ -44,9 +45,12 @@ internal class StatusBarExtras(private val host: View) {
         tint: Int,
         glanceText: String?,
         unreadVisible: Boolean,
+        chargingPower: String?,
     ) {
         val parent = clock?.parent as? LinearLayout ?: find<LinearLayout>("phone_status_bar_left_container")
         var index = if (parent == null) 0 else parent.indexOfChild(clock) + 1
+        setLabel(power, chargingPower, tint, parent, index)
+        if (chargingPower != null) index++
         val title = if (options.headphoneTrack && parent != null &&
             host.context.getSystemService(android.app.KeyguardManager::class.java)?.isKeyguardLocked != true
         ) readTrack() else {
@@ -88,7 +92,7 @@ internal class StatusBarExtras(private val host: View) {
     }
 
     fun clear() {
-        listOf(track, privacy, glance, unread).forEach(::detach)
+        listOf(track, privacy, glance, unread, power).forEach(::detach)
         lastTrack = null
         trackUntil = 0
         observedTrack = null

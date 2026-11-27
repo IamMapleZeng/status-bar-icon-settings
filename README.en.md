@@ -6,6 +6,8 @@ A Kotlin module for the Xiaomi 15 Ultra running HyperOS 4, SukiSU Ultra, and off
 
 Enable **Hide time** in the **Status bar icons** section to hide the status bar clock. The switch defaults to off and saves automatically.
 
+Enable **Show charging power** in **Time display** to show power beside the clock, for example `8.5 W`, refreshed roughly once per second. Charging power always appears immediately after the clock. This estimates net battery charging power from system battery current and voltage. The display hides when charging stops or pauses, or when valid readings are unavailable.
+
 ## Installation
 
 1. Confirm that SukiSU Ultra and your Zygisk implementation are running. In LSPosed Manager, verify that official LSPosed 2.2.1 (7912) is active. Keep LSPosed safe mode available and make sure you have either an authorized USB debugging connection or access to SukiSU Manager for recovery.

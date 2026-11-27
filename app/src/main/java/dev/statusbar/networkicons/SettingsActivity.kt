@@ -29,6 +29,7 @@ class SettingsActivity : Activity() {
     private lateinit var noSim: Switch
     private lateinit var battery: Switch
     private lateinit var hideClock: Switch
+    private lateinit var chargingPower: Switch
     private lateinit var speedThreshold: Button
     private var selectedSpeedThreshold: Int? = null
     private lateinit var batteryLine: Switch
@@ -101,6 +102,7 @@ class SettingsActivity : Activity() {
 
         val clock = settingsCard(content, R.string.section_clock)
         clockSeconds = addToggle(clock, R.string.clock_seconds)
+        chargingPower = addToggle(clock, R.string.charging_power)
         clockColor = addAction(clock) { chooseClockColor() }
         updateClockColorButton()
 
@@ -235,6 +237,7 @@ class SettingsActivity : Activity() {
                     updateSpeedThresholdButton()
                     batteryLine.isChecked = settings.batteryLine
                     options = settings.options
+                    chargingPower.isChecked = options.chargingPower
                     selectedColor = settings.batteryLineColor
                     updateColorButton()
                     selectedAnimation = settings.chargingAnimation
@@ -257,6 +260,7 @@ class SettingsActivity : Activity() {
 
     private fun saveSettings() {
         val remote = prefs ?: return
+        options = options.copy(chargingPower = chargingPower.isChecked)
         val request = generation
         val settings = IconSettings(
             hideMobile = mobile.isChecked,
@@ -420,6 +424,7 @@ class SettingsActivity : Activity() {
         batteryLine.isEnabled = enabled
         updateBatteryButtons()
         clockSeconds.isEnabled = enabled
+        chargingPower.isEnabled = enabled
         clockColor.isEnabled = enabled
         clockColor.alpha = if (enabled) 1f else 0.55f
         optionsButton.isEnabled = enabled

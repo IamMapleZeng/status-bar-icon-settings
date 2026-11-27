@@ -61,6 +61,7 @@ internal data class StatusBarOptions(
     val chargeParticles: Boolean = false,
     val privacyLabels: Boolean = false,
     val batteryPercentage: Boolean = false,
+    val chargingPower: Boolean = false,
     val calendarCountdown: Boolean = false,
     val calendarTitle: Boolean = false,
     val rainDrops: Boolean = false,
@@ -104,6 +105,7 @@ internal data class StatusBarOptions(
             .putBoolean("privacy_labels", privacyLabels)
             // Keep the original preference key so existing users retain their tap setting.
             .putBoolean("battery_estimate", batteryPercentage)
+            .putBoolean("charging_power", chargingPower)
             .putBoolean("calendar_countdown", calendarCountdown)
             .putBoolean("calendar_title", calendarTitle)
             .putBoolean("rain_drops", rainDrops)
@@ -159,6 +161,7 @@ internal data class StatusBarOptions(
                 chargeParticles = values["charge_particles"] == true,
                 privacyLabels = values["privacy_labels"] == true,
                 batteryPercentage = values["battery_estimate"] == true,
+                chargingPower = values["charging_power"] == true,
                 calendarCountdown = values["calendar_countdown"] == true,
                 calendarTitle = values["calendar_title"] == true,
                 rainDrops = values["rain_drops"] == true,
