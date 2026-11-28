@@ -40,6 +40,11 @@
     <string name="ring_width_value">圆圈粗细（%1$d dp）</string>
     <string name="width_dp">%1$d dp</string>
     <string name="restore_default">恢复默认</string>
+    <string name="ring_position_title">圆圈位置微调</string>
+    <string name="ring_position_value">圆圈位置（水平 %1$.1f dp，垂直 %2$.1f dp）</string>
+    <string name="ring_position_hint">水平负值向左、正值向右；垂直负值向上、正值向下。0 为推荐位置，恢复默认将两项调节值归零。超出状态栏边界时限制在可绘制范围内。</string>
+    <string name="ring_horizontal">水平偏移（%1$.1f dp）</string>
+    <string name="ring_vertical">垂直偏移（%1$.1f dp）</string>
     <string name="battery_ring">圆圈显示</string>
     <string name="choose_ring_color">选择圆圈颜色</string>
     <string name="ring_color">圆圈颜色（%1$s）</string>

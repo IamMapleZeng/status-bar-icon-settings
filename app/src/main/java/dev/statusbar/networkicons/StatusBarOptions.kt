@@ -39,7 +39,7 @@ internal data class StatusBarOptions(
     val mediumSpeedColor: Int = MEDIUM_LEVEL_COLOR,
     val highSpeedColor: Int = LOW_LEVEL_COLOR,
     val speedSmoothing: Boolean = false,
-    val batteryColors: Boolean = false,
+    val batteryColors: Boolean = true,
     val batteryLineColors: BatteryLineColors = BatteryLineColors(),
     val weekday: Boolean = false,
     val dimSeconds: Boolean = false,
@@ -132,7 +132,7 @@ internal data class StatusBarOptions(
                 mediumSpeedColor = values["medium_speed_color"] as? Int ?: MEDIUM_LEVEL_COLOR,
                 highSpeedColor = values["high_speed_color"] as? Int ?: LOW_LEVEL_COLOR,
                 speedSmoothing = values["speed_smoothing"] == true,
-                batteryColors = values["battery_colors"] == true,
+                batteryColors = values["battery_colors"] as? Boolean ?: true,
                 batteryLineColors = BatteryLineColors(
                     mediumStart = if (validBatteryRange) batteryStart else DEFAULT_BATTERY_MEDIUM_START,
                     mediumEnd = if (validBatteryRange) batteryEnd else DEFAULT_BATTERY_MEDIUM_END,

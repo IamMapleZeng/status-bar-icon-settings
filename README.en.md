@@ -2,7 +2,7 @@
 
 [简体中文](README.md) · **English**
 
-A Kotlin module for the Xiaomi 15 Ultra running HyperOS 4, SukiSU Ultra, and official LSPosed 2.2.1 (7912). The settings screen offers independent controls for the mobile network, Wi-Fi, no-SIM, and battery icons, plus a battery line at the top of the screen and detailed logging. All switches default to off. The mobile network switch controls the entire cellular icon group, including signal bars and any 4G or 5G labels rendered by the same component. The module changes how SystemUI displays these icons. Android continues to manage network connections.
+A Kotlin module for the Xiaomi 15 Ultra running HyperOS 4, SukiSU Ultra, and official LSPosed 2.2.1 (7912). The settings screen offers independent controls for the mobile network, Wi-Fi, no-SIM, and battery icons, plus a battery line at the top of the screen and detailed logging. Switches default to off unless noted otherwise. The mobile network switch controls the entire cellular icon group, including signal bars and any 4G or 5G labels rendered by the same component. The module changes how SystemUI displays these icons. Android continues to manage network connections.
 
 Enable **Hide time** in the **Status bar icons** section to hide the status bar clock. The switch defaults to off and saves automatically.
 
@@ -50,11 +50,15 @@ Verify that Wi-Fi and mobile data still connect and that the icon settings apply
 
 ### Camera battery ring
 
-The **Battery display** section includes a **Ring display** switch directly below the battery line switch. It defaults to off. The line and ring can be enabled separately or together. The clockwise arc starts at the top and represents remaining battery capacity, with a faint full-capacity track.
+The **Battery display** section includes a **Ring display** switch directly below the battery line switch. The ring defaults to on. The line and ring can be enabled separately or together. The clockwise arc starts at the top and represents remaining battery capacity, with a faint full-capacity track.
 
-Line and ring thickness can be adjusted separately from 1 to 6 dp. Both default to 2 dp and have a reset option. Charging animations follow their respective thickness settings. A thicker ring expands outward to preserve clearance around the camera.
+Line and ring thickness can be adjusted separately from 1 to 6 dp. The line defaults to 2 dp and the ring to 5 dp. Both have a reset option. Charging animations follow their respective thickness settings. A thicker ring expands outward to preserve clearance around the camera.
 
 The ring has its own color. Battery level colors override both the line and ring colors using the same thresholds and palette. Disabling battery level colors restores their individual colors.
+
+Use **Ring position** to adjust horizontal and vertical offsets separately, from -10 to +10 dp in 0.5 dp steps. Negative values move left or up and positive values move right or down. Confirm to save, or restore defaults to reset both displayed adjustments to zero. The recommended position includes a built-in -0.5 dp vertical calibration. Position is constrained to the drawable status bar area. The Xiaomi 15 Ultra default center is shifted down 3 dp from the system cutout reservation center.
+
+The ring defaults to Rainbow and battery level colors are enabled by default (red for low, orange for medium, and green for high battery levels).
 
 Ring charging animations include Off, Sweep, Comet Trail, Breathing Glow, Dual Sweep, Wave, and Rainbow. The battery line also supports Rainbow. Rainbow colors flow during charging and return to the custom color or battery level palette when the animation stops. They play while charging with the screen on, and return to a static battery arc when charging stops.
 

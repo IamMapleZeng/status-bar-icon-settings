@@ -17,6 +17,8 @@ internal data class BatteryRingStyle(
     val color: Int,
     val animation: RingChargingAnimation,
     val widthDp: Int = 2,
+    val offsetX: Float = 0f,
+    val offsetY: Float = 0f,
 )
 
 /** Draws around the portrait camera cutout, without adding children to SystemUI containers. */
@@ -52,15 +54,19 @@ internal class BatteryRing(private val host: View, private val style: BatteryRin
         val maxStroke = style.widthDp * density *
             if (style.animation == RingChargingAnimation.BREATH) 1.25f else 1f
         val radius = camera.width() / 2f + density + maxStroke / 2f
-        val x = camera.centerX() - location[0]
+        val margin = maxStroke / 2f
+        val clearance = radius + margin
+        if (host.width < clearance * 2 || host.height < clearance * 2) return false
+        val x = (camera.centerX() - location[0] + style.offsetX * density)
+            .coerceIn(clearance, host.width - clearance)
         // Fine-tune the Xiaomi 15 Ultra's rectangular camera reservation.
-        val verticalOffset = if (Build.DEVICE == "xuanyuan") 2 * density else 0f
-        val y = camera.centerY() + verticalOffset - location[1]
+        val verticalOffset = if (Build.DEVICE == "xuanyuan") 3 * density else 0f
+        val y = (camera.centerY() + verticalOffset - location[1] + style.offsetY * density)
+            .coerceIn(clearance, host.height - clearance)
         if (oval.centerX() != x || oval.centerY() != y || rainbowGradient == null) {
             rainbowGradient = SweepGradient(x, y, RAINBOW_COLORS, null)
         }
         oval.set(x - radius, y - radius, x + radius, y + radius)
-        val margin = maxStroke / 2f
         return oval.left >= margin && oval.top >= margin &&
             oval.right + margin <= host.width && oval.bottom + margin <= host.height
     }

@@ -11,8 +11,8 @@ android {
         applicationId 'io.github.iammaplezeng.statusbaricons'
         minSdk 28
         targetSdk 34
-        versionCode 34
-        versionName '0.9.18'
+        versionCode 35
+        versionName '0.9.19'
     }
 
     compileOptions {

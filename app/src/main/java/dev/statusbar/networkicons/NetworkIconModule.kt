@@ -349,7 +349,8 @@ class NetworkIconModule : XposedModule() {
         val appearance = LineAppearance(
             settings.batteryLineColor, options.batteryLineColors.takeIf { options.batteryColors },
             settings.chargingAnimation, showBattery, star, particles, finale,
-            BatteryRingStyle(settings.batteryRingColor, settings.ringAnimation, settings.batteryRingWidth)
+            BatteryRingStyle(settings.batteryRingColor, settings.ringAnimation, settings.batteryRingWidth,
+                settings.batteryRingOffsetX, settings.batteryRingOffsetY)
                 .takeIf { profile == null && settings.batteryRing },
             settings.batteryLineWidth,
         )
@@ -707,12 +708,12 @@ class NetworkIconModule : XposedModule() {
         val voltageMv = battery?.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0) ?: 0
         val currentUa = context.getSystemService(BatteryManager::class.java)
             ?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW) ?: Int.MIN_VALUE
-        if (plugged != 0 && status == BatteryManager.BATTERY_STATUS_CHARGING &&
-            voltageMv > 0 && currentUa > 0
-        ) {
-            val watts = currentUa.toDouble() * voltageMv / 1_000_000_000.0
-            String.format(java.util.Locale.ROOT, "%.1f W", watts)
-        } else null
+        // Xiaomi 15 Ultra reports negative current during fast charging.
+        val watts = chargingPowerWatts(
+            plugged != 0, status == BatteryManager.BATTERY_STATUS_CHARGING,
+            voltageMv, currentUa, allowNegativeCurrent = Build.DEVICE == "xuanyuan",
+        )
+        watts?.let { String.format(java.util.Locale.ROOT, "%.1f W", it) }
     } catch (error: RuntimeException) {
         Log.w(LOG_TAG, "Charging power unavailable", error)
         null

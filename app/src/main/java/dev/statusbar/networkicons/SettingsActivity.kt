@@ -37,11 +37,14 @@ class SettingsActivity : Activity() {
     private lateinit var ringColor: Button
     private lateinit var ringAnimation: Button
     private var selectedRingColor = DEFAULT_LINE_COLOR
-    private var selectedRingAnimation = RingChargingAnimation.OFF
+    private var selectedRingAnimation = RingChargingAnimation.RAINBOW
     private lateinit var lineWidth: Button
     private lateinit var ringWidth: Button
+    private lateinit var ringPosition: Button
+    private var selectedRingOffsetX = 0f
+    private var selectedRingOffsetY = DEFAULT_RING_OFFSET_Y
     private var selectedLineWidth = 2
-    private var selectedRingWidth = 2
+    private var selectedRingWidth = DEFAULT_RING_WIDTH
     private lateinit var lineColor: Button
     private lateinit var chargingAnimation: Button
     private var selectedAnimation = ChargingAnimation.OFF
@@ -132,12 +135,14 @@ class SettingsActivity : Activity() {
             }
         }
         ringWidth = addAction(line) {
-            chooseBatteryWidth(R.string.ring_width_title, selectedRingWidth) {
+            chooseBatteryWidth(R.string.ring_width_title, selectedRingWidth, DEFAULT_RING_WIDTH) {
                 selectedRingWidth = it
                 updateWidthButtons()
                 saveSettings()
             }
         }
+        ringPosition = addAction(line) { chooseRingPosition() }
+        updateRingPositionButton()
         updateWidthButtons()
         updateRingButtons()
         updateChargingButton()
@@ -284,6 +289,9 @@ class SettingsActivity : Activity() {
                     selectedRingAnimation = settings.ringAnimation
                     selectedLineWidth = settings.batteryLineWidth
                     selectedRingWidth = settings.batteryRingWidth
+                    selectedRingOffsetX = settings.batteryRingOffsetX
+                    selectedRingOffsetY = settings.batteryRingOffsetY
+                    updateRingPositionButton()
                     updateWidthButtons()
                     options = settings.options
                     chargingPower.isChecked = options.chargingPower
@@ -324,6 +332,8 @@ class SettingsActivity : Activity() {
             ringAnimation = selectedRingAnimation,
             batteryLineWidth = selectedLineWidth,
             batteryRingWidth = selectedRingWidth,
+            batteryRingOffsetX = selectedRingOffsetX,
+            batteryRingOffsetY = selectedRingOffsetY,
             batteryLineColor = selectedColor,
             chargingAnimation = selectedAnimation,
             clockSeconds = clockSeconds.isChecked,
@@ -459,7 +469,50 @@ class SettingsActivity : Activity() {
         clockColor.setCompoundDrawablesRelative(color?.let(::colorSwatch), null, null, null)
     }
 
-    private fun chooseBatteryWidth(title: Int, current: Int, onSelect: (Int) -> Unit) {
+    private fun updateRingPositionButton() {
+        ringPosition.text = getString(R.string.ring_position_value, selectedRingOffsetX, selectedRingOffsetY - DEFAULT_RING_OFFSET_Y)
+    }
+
+    private fun chooseRingPosition() {
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(8), dp(20), dp(8))
+            addView(TextView(this@SettingsActivity).apply { setText(R.string.ring_position_hint) })
+        }
+        fun axis(title: Int, current: Float): android.widget.SeekBar {
+            val label = TextView(this).apply { text = getString(title, current) }
+            content.addView(label)
+            return android.widget.SeekBar(this).apply {
+                max = maxOf(40, ((current + 10f) * 2).toInt())
+                progress = ((current + 10f) * 2).toInt()
+                contentDescription = getString(title, current)
+                setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+                    override fun onProgressChanged(bar: android.widget.SeekBar, progress: Int, fromUser: Boolean) {
+                        label.text = getString(title, progress / 2f - 10f)
+                    }
+                    override fun onStartTrackingTouch(bar: android.widget.SeekBar) = Unit
+                    override fun onStopTrackingTouch(bar: android.widget.SeekBar) = Unit
+                })
+                content.addView(this)
+            }
+        }
+        val horizontal = axis(R.string.ring_horizontal, selectedRingOffsetX)
+        val vertical = axis(R.string.ring_vertical, selectedRingOffsetY - DEFAULT_RING_OFFSET_Y)
+        fun applyPosition(x: Float, y: Float) {
+            selectedRingOffsetX = x
+            selectedRingOffsetY = y
+            updateRingPositionButton()
+            saveSettings()
+        }
+        AlertDialog.Builder(this).setTitle(R.string.ring_position_title).setView(content)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                applyPosition(horizontal.progress / 2f - 10f, vertical.progress / 2f - 10f + DEFAULT_RING_OFFSET_Y)
+            }
+            .setNeutralButton(R.string.restore_default) { _, _ -> applyPosition(0f, DEFAULT_RING_OFFSET_Y) }
+            .setNegativeButton(android.R.string.cancel, null).show()
+    }
+
+    private fun chooseBatteryWidth(title: Int, current: Int, defaultWidth: Int = 2, onSelect: (Int) -> Unit) {
         val padding = dp(20)
         val value = TextView(this).apply { text = getString(R.string.width_dp, current) }
         val slider = android.widget.SeekBar(this).apply {
@@ -482,7 +535,7 @@ class SettingsActivity : Activity() {
         }
         AlertDialog.Builder(this).setTitle(title).setView(content)
             .setPositiveButton(android.R.string.ok) { _, _ -> onSelect(slider.progress + 1) }
-            .setNeutralButton(R.string.restore_default) { _, _ -> onSelect(2) }
+            .setNeutralButton(R.string.restore_default) { _, _ -> onSelect(defaultWidth) }
             .setNegativeButton(android.R.string.cancel, null).show()
     }
 
@@ -516,6 +569,10 @@ class SettingsActivity : Activity() {
             ringWidth.isEnabled = batteryRing.isEnabled && batteryRing.isChecked
             lineWidth.alpha = if (lineWidth.isEnabled) 1f else 0.55f
             ringWidth.alpha = if (ringWidth.isEnabled) 1f else 0.55f
+        }
+        if (::ringPosition.isInitialized) {
+            ringPosition.isEnabled = batteryRing.isEnabled && batteryRing.isChecked
+            ringPosition.alpha = if (ringPosition.isEnabled) 1f else 0.55f
         }
         lineColor.isEnabled = enabled && !options.batteryColors
         chargingAnimation.isEnabled = enabled

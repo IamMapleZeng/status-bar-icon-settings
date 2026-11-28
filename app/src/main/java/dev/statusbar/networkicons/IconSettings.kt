@@ -5,6 +5,9 @@ import android.content.SharedPreferences
 internal const val LOG_TAG = "NetworkStatusIcons"
 internal const val PREF_GROUP = "network_icons"
 
+internal const val DEFAULT_RING_WIDTH = 5
+internal const val DEFAULT_RING_OFFSET_Y = -0.5f
+
 internal const val DEFAULT_LINE_COLOR = 0xFF00C896.toInt()
 
 internal enum class ChargingAnimation {
@@ -30,11 +33,13 @@ internal data class IconSettings(
     val clockColor: Int?,
     val debug: Boolean,
     val options: StatusBarOptions,
-    val batteryRing: Boolean = false,
+    val batteryRing: Boolean = true,
     val batteryRingColor: Int = DEFAULT_LINE_COLOR,
-    val ringAnimation: RingChargingAnimation = RingChargingAnimation.OFF,
+    val ringAnimation: RingChargingAnimation = RingChargingAnimation.RAINBOW,
     val batteryLineWidth: Int = 2,
-    val batteryRingWidth: Int = 2,
+    val batteryRingWidth: Int = DEFAULT_RING_WIDTH,
+    val batteryRingOffsetX: Float = 0f,
+    val batteryRingOffsetY: Float = DEFAULT_RING_OFFSET_Y,
 ) {
     fun save(prefs: SharedPreferences): Boolean = prefs.edit()
         .putBoolean("hide_mobile", hideMobile)
@@ -48,6 +53,8 @@ internal data class IconSettings(
         }
         .putInt("battery_line_width", batteryLineWidth)
         .putInt("battery_ring_width", batteryRingWidth)
+        .putFloat("battery_ring_offset_x", batteryRingOffsetX)
+        .putFloat("battery_ring_offset_y", batteryRingOffsetY)
         .putBoolean("battery_ring", batteryRing)
         .putInt("battery_ring_color", batteryRingColor)
         .putString("ring_animation", ringAnimation.name)
@@ -79,11 +86,13 @@ internal data class IconSettings(
                 values["clock_color"] as? Int,
                 values["debug"] == true,
                 StatusBarOptions.read(values),
-                values["battery_ring"] == true,
+                values["battery_ring"] as? Boolean ?: true,
                 values["battery_ring_color"] as? Int ?: DEFAULT_LINE_COLOR,
-                RingChargingAnimation.entries.firstOrNull { it.name == values["ring_animation"] } ?: RingChargingAnimation.OFF,
+                RingChargingAnimation.entries.firstOrNull { it.name == values["ring_animation"] } ?: RingChargingAnimation.RAINBOW,
                 (values["battery_line_width"] as? Int)?.takeIf { it in 1..6 } ?: 2,
-                (values["battery_ring_width"] as? Int)?.takeIf { it in 1..6 } ?: 2,
+                (values["battery_ring_width"] as? Int)?.takeIf { it in 1..6 } ?: DEFAULT_RING_WIDTH,
+                (values["battery_ring_offset_x"] as? Float)?.takeIf { it in -10f..10f } ?: 0f,
+                (values["battery_ring_offset_y"] as? Float)?.takeIf { it in (DEFAULT_RING_OFFSET_Y - 10f)..10f } ?: DEFAULT_RING_OFFSET_Y,
             )
         }
     }
