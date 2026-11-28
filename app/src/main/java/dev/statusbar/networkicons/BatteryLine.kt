@@ -35,12 +35,18 @@ internal class BatteryLine(
     private val hourlyStar: Boolean,
     private val chargeParticles: Boolean,
     private val chargeFinale: Boolean = false,
+    ringStyle: BatteryRingStyle? = null,
+    private val widthDp: Int = 2,
 ) : Drawable(), View.OnAttachStateChangeListener, View.OnLayoutChangeListener {
     private val paint = Paint().apply { this.color = color }
+    private val ring = ringStyle?.let { BatteryRing(host, it) }
     private val animationPath = Path()
     private val gradientPosition = Matrix()
     private val lightGradient by lazy { createGradient(Color.WHITE) }
     private val darkGradient by lazy { createGradient(Color.BLACK) }
+    private val rainbowGradient by lazy {
+        LinearGradient(0f, 0f, 1f, 0f, RAINBOW_COLORS, null, Shader.TileMode.REPEAT)
+    }
 
     private fun createGradient(highlight: Int): LinearGradient = LinearGradient(
         0f, 0f, 1f, 0f,
@@ -70,7 +76,11 @@ internal class BatteryLine(
         }
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            updateLevel(intent)
+            when (intent.action) {
+                Intent.ACTION_SCREEN_ON -> invalidateSelf()
+                Intent.ACTION_SCREEN_OFF -> unscheduleSelf(nextFrame)
+                else -> updateLevel(intent)
+            }
         }
     }
 
@@ -87,7 +97,10 @@ internal class BatteryLine(
     override fun onViewAttachedToWindow(view: View) {
         if (registered) return
         try {
-            val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+            val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED).apply {
+                addAction(Intent.ACTION_SCREEN_ON)
+                addAction(Intent.ACTION_SCREEN_OFF)
+            }
             val sticky = if (Build.VERSION.SDK_INT >= 33) {
                 view.context.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
             } else {
@@ -137,16 +150,16 @@ internal class BatteryLine(
 
     private fun resize() {
         val density = host.resources.displayMetrics.density
-        thickness = (2 * density).roundToInt().coerceAtLeast(1)
+        thickness = (widthDp * density).roundToInt().coerceAtLeast(1)
         val height = when (if (charging) animation else ChargingAnimation.OFF) {
-            ChargingAnimation.OFF -> thickness
-            ChargingAnimation.GRADIENT -> (5 * density).roundToInt()
-            ChargingAnimation.WAVE -> (9 * density).roundToInt()
+            ChargingAnimation.OFF, ChargingAnimation.RAINBOW -> thickness
+            ChargingAnimation.GRADIENT -> (thickness * 2.5f).roundToInt()
+            ChargingAnimation.WAVE -> (thickness * 4.5f).roundToInt()
             ChargingAnimation.COMET, ChargingAnimation.DOUBLE_SWEEP, ChargingAnimation.BREATH ->
-                (5 * density).roundToInt()
+                (thickness * 2.5f).roundToInt()
         }
         val effectHeight = if (hourlyStar || chargeParticles) (15 * density).roundToInt() else 0
-        setBounds(0, 0, host.width, minOf(host.height, maxOf(height, effectHeight)))
+        setBounds(0, 0, host.width, if (ring != null) host.height else minOf(host.height, maxOf(height, effectHeight)))
     }
 
     private fun updateLevel(intent: Intent) {
@@ -202,10 +215,12 @@ internal class BatteryLine(
         } else if (showBattery && width > 0f) {
             drawBattery(canvas, width, now, interactive)
         }
+        val ringAnimating = ring?.draw(canvas, level, batteryColors, charging && interactive,
+            ((now - animationStart) % CYCLE_MS).toFloat() / CYCLE_MS) == true
         if (star) drawStar(canvas, (now - starStart) / 950f)
         if (burst) drawBurst(canvas, width, (now - burstStart) / 900f)
         unscheduleSelf(nextFrame)
-        if (interactive && (star || burst || remaining > 0 ||
+        if (interactive && (star || burst || ringAnimating || remaining > 0 ||
                 (showBattery && charging && animation != ChargingAnimation.OFF))
         ) scheduleSelf(nextFrame, now + FRAME_MS)
     }
@@ -219,9 +234,9 @@ internal class BatteryLine(
         val mode = if (charging && interactive) animation else ChargingAnimation.OFF
         val save = canvas.save()
         val drawHeight = when (mode) {
-            ChargingAnimation.OFF -> thickness
-            ChargingAnimation.WAVE -> (9 * host.resources.displayMetrics.density).roundToInt()
-            else -> (5 * host.resources.displayMetrics.density).roundToInt()
+            ChargingAnimation.OFF, ChargingAnimation.RAINBOW -> thickness
+            ChargingAnimation.WAVE -> (thickness * 4.5f).roundToInt()
+            else -> (thickness * 2.5f).roundToInt()
         }.coerceAtMost(bounds.height())
         animationHeight = drawHeight
         canvas.clipRect(0f, 0f, bounds.right.toFloat(), drawHeight.toFloat())
@@ -232,6 +247,7 @@ internal class BatteryLine(
             ChargingAnimation.COMET -> drawComet(canvas, width, progress)
             ChargingAnimation.DOUBLE_SWEEP -> drawDoubleSweep(canvas, width, progress)
             ChargingAnimation.BREATH -> drawBreath(canvas, width, progress)
+            ChargingAnimation.RAINBOW -> drawRainbow(canvas, width, progress)
         }
         canvas.restoreToCount(save)
     }
@@ -393,6 +409,15 @@ internal class BatteryLine(
     private fun drawDoubleSweep(canvas: Canvas, width: Float, progress: Float) {
         drawGradient(canvas, width, progress)
         drawGradient(canvas, width, 1f - progress)
+    }
+
+    private fun drawRainbow(canvas: Canvas, width: Float, progress: Float) {
+        gradientPosition.setScale(bounds.width().toFloat().coerceAtLeast(1f), 1f)
+        gradientPosition.postTranslate(progress * bounds.width(), 0f)
+        rainbowGradient.setLocalMatrix(gradientPosition)
+        paint.shader = rainbowGradient
+        canvas.drawRect(0f, 0f, width, thickness.toFloat(), paint)
+        paint.shader = null
     }
 
     private fun drawBreath(canvas: Canvas, width: Float, progress: Float) {

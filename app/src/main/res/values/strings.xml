@@ -1,7 +1,7 @@
 <resources>
-    <string name="low_battery_line_color">低电量线颜色</string>
-    <string name="medium_battery_line_color">中电量线颜色</string>
-    <string name="high_battery_line_color">高电量线颜色</string>
+    <string name="low_battery_line_color">低电量颜色</string>
+    <string name="medium_battery_line_color">中电量颜色</string>
+    <string name="high_battery_line_color">高电量颜色</string>
     <string name="notification_flash_start">渐变起始色</string>
     <string name="notification_flash_end">渐变结束色</string>
     <string name="color_setting_value">%1$s（%2$s）</string>
@@ -9,7 +9,7 @@
     <string name="high_speed_color">高速颜色</string>
     <string name="app_name">Status Bar Icon Settings</string>
     <string name="section_icons">状态栏图标</string>
-    <string name="section_line">电量横线</string>
+    <string name="section_line">电量显示</string>
     <string name="section_clock">时间显示</string>
     <string name="weather_condition">显示天气状况</string>
     <string name="weather_language">天气语言</string>
@@ -34,6 +34,27 @@
     <string name="speed_threshold_unit">KB/s</string>
     <string name="speed_threshold_info">网速高于设定值时显示。请先在系统设置中开启实时网速。</string>
     <string name="speed_threshold_invalid">请输入 0 至 2147483647 的整数</string>
+    <string name="line_width_title">横线粗细</string>
+    <string name="ring_width_title">圆圈粗细</string>
+    <string name="line_width_value">横线粗细（%1$d dp）</string>
+    <string name="ring_width_value">圆圈粗细（%1$d dp）</string>
+    <string name="width_dp">%1$d dp</string>
+    <string name="restore_default">恢复默认</string>
+    <string name="battery_ring">圆圈显示</string>
+    <string name="choose_ring_color">选择圆圈颜色</string>
+    <string name="ring_color">圆圈颜色（%1$s）</string>
+    <string name="ring_color_automatic">圆圈颜色（按电量）</string>
+    <string name="ring_animation_title">圆圈充电动画</string>
+    <string name="ring_animation_value">圆圈充电动画（%1$s）</string>
+    <string-array name="ring_animations">
+        <item>关闭</item>
+        <item>环绕扫光</item>
+        <item>彗星拖尾</item>
+        <item>呼吸光</item>
+        <item>双向扫光</item>
+        <item>波纹流动</item>
+        <item>彩虹流转</item>
+    </string-array>
     <string name="battery_line">横线显示电量</string>
     <string name="battery_line_color">横线颜色（%1$s）</string>
     <string name="battery_line_color_automatic">横线颜色（按电量）</string>
@@ -47,6 +68,7 @@
         <item>彗星拖尾</item>
         <item>双向扫光</item>
         <item>呼吸光</item>
+        <item>彩虹流转</item>
     </string-array>
     <string name="hue">色相</string>
     <string name="hex_color">十六进制色值（#RRGGBB）</string>

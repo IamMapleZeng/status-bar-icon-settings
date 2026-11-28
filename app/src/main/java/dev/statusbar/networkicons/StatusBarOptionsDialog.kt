@@ -15,6 +15,7 @@ import android.widget.TextView
 
 internal fun showStatusBarOptions(
     context: Context, initial: StatusBarOptions, batteryColor: Int, chargingAnimation: ChargingAnimation,
+    lineWidthDp: Int = 2,
     onSave: (StatusBarOptions) -> Unit,
 ) {
     var draft = initial
@@ -122,7 +123,7 @@ internal fun showStatusBarOptions(
         draft = draft.copy(highSpeedColor = it)
     }
     toggle("网速防抖（连续低速至少 3 秒才隐藏）", initial.speedSmoothing) { draft = draft.copy(speedSmoothing = it) }
-    toggle("电量线按电量变色", initial.batteryColors) { draft = draft.copy(batteryColors = it) }
+    toggle("电量显示按电量变色", initial.batteryColors) { draft = draft.copy(batteryColors = it) }
     val batteryStart = field("中电量起点（%，低于此值为低电量）", initial.batteryLineColors.mediumStart.toString())
     val batteryEnd = field("中电量上限（%，高于此值为高电量）", initial.batteryLineColors.mediumEnd.toString())
     batteryStart.inputType = android.text.InputType.TYPE_CLASS_NUMBER
@@ -197,7 +198,7 @@ internal fun showStatusBarOptions(
                 ?: draft.notificationFlashSeconds
             val colors = readBatteryLineColors() ?: return@setOnClickListener
             val preview = draft.copy(notificationFlashSeconds = duration, batteryLineColors = colors)
-            showStatusBarPreview(context, preview, batteryColor, chargingAnimation)
+            showStatusBarPreview(context, preview, batteryColor, chargingAnimation, lineWidthDp)
         }
     })
     toggle("耳机播放时短暂显示新曲名", initial.headphoneTrack) { draft = draft.copy(headphoneTrack = it) }

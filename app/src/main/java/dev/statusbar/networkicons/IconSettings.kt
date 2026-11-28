@@ -8,7 +8,7 @@ internal const val PREF_GROUP = "network_icons"
 internal const val DEFAULT_LINE_COLOR = 0xFF00C896.toInt()
 
 internal enum class ChargingAnimation {
-    OFF, GRADIENT, WAVE, COMET, DOUBLE_SWEEP, BREATH;
+    OFF, GRADIENT, WAVE, COMET, DOUBLE_SWEEP, BREATH, RAINBOW;
 
     companion object {
         fun fromPreference(value: Any?): ChargingAnimation =
@@ -30,6 +30,11 @@ internal data class IconSettings(
     val clockColor: Int?,
     val debug: Boolean,
     val options: StatusBarOptions,
+    val batteryRing: Boolean = false,
+    val batteryRingColor: Int = DEFAULT_LINE_COLOR,
+    val ringAnimation: RingChargingAnimation = RingChargingAnimation.OFF,
+    val batteryLineWidth: Int = 2,
+    val batteryRingWidth: Int = 2,
 ) {
     fun save(prefs: SharedPreferences): Boolean = prefs.edit()
         .putBoolean("hide_mobile", hideMobile)
@@ -41,6 +46,11 @@ internal data class IconSettings(
             if (networkSpeedThreshold == null) remove("network_speed_threshold")
             else putInt("network_speed_threshold", networkSpeedThreshold)
         }
+        .putInt("battery_line_width", batteryLineWidth)
+        .putInt("battery_ring_width", batteryRingWidth)
+        .putBoolean("battery_ring", batteryRing)
+        .putInt("battery_ring_color", batteryRingColor)
+        .putString("ring_animation", ringAnimation.name)
         .putBoolean("battery_line", batteryLine)
         .putInt("battery_line_color", batteryLineColor)
         .putString("charging_animation", chargingAnimation.name)
@@ -69,6 +79,11 @@ internal data class IconSettings(
                 values["clock_color"] as? Int,
                 values["debug"] == true,
                 StatusBarOptions.read(values),
+                values["battery_ring"] == true,
+                values["battery_ring_color"] as? Int ?: DEFAULT_LINE_COLOR,
+                RingChargingAnimation.entries.firstOrNull { it.name == values["ring_animation"] } ?: RingChargingAnimation.OFF,
+                (values["battery_line_width"] as? Int)?.takeIf { it in 1..6 } ?: 2,
+                (values["battery_ring_width"] as? Int)?.takeIf { it in 1..6 } ?: 2,
             )
         }
     }

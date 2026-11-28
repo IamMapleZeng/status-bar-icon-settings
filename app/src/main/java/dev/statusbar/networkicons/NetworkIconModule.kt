@@ -51,6 +51,7 @@ class NetworkIconModule : XposedModule() {
     private data class LineAppearance(
         val color: Int, val batteryColors: BatteryLineColors?, val animation: ChargingAnimation,
         val showBattery: Boolean, val star: Boolean, val particles: Boolean, val finale: Boolean,
+        val ring: BatteryRingStyle?, val widthDp: Int,
     )
     private data class ActiveLine(val appearance: LineAppearance, val drawable: WeakReference<BatteryLine>)
     private val lineHosts = WeakHashMap<View, ActiveLine?>()
@@ -348,14 +349,17 @@ class NetworkIconModule : XposedModule() {
         val appearance = LineAppearance(
             settings.batteryLineColor, options.batteryLineColors.takeIf { options.batteryColors },
             settings.chargingAnimation, showBattery, star, particles, finale,
+            BatteryRingStyle(settings.batteryRingColor, settings.ringAnimation, settings.batteryRingWidth)
+                .takeIf { profile == null && settings.batteryRing },
+            settings.batteryLineWidth,
         )
         val previous = lineHosts[view]
-        val enabled = showBattery || star || particles || finale || (profile == null && options.timerLine)
+        val enabled = appearance.ring != null || showBattery || star || particles || finale || (profile == null && options.timerLine)
         if (enabled && previous?.appearance == appearance && previous.drawable.get() != null) return
         previous?.drawable?.get()?.uninstall()
         lineHosts[view] = if (enabled) {
             val line = BatteryLine(
-                view, appearance.color, appearance.batteryColors, appearance.animation, showBattery, star, particles, finale,
+                view, appearance.color, appearance.batteryColors, appearance.animation, showBattery, star, particles, finale, appearance.ring, appearance.widthDp,
             )
             line.timer = timer.takeIf { profile == null && options.timerLine }
             line.install()

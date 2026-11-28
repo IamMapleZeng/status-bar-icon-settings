@@ -12,6 +12,7 @@ import kotlin.math.roundToInt
 
 internal fun showStatusBarPreview(
     context: Context, options: StatusBarOptions, batteryColor: Int, chargingAnimation: ChargingAnimation,
+    lineWidthDp: Int = 2,
 ) {
     fun dp(value: Int) = (value * context.resources.displayMetrics.density).roundToInt()
     val body = LinearLayout(context).apply {
@@ -42,7 +43,7 @@ internal fun showStatusBarPreview(
     val rain = StatusBarEffect(weather)
     val finale = StatusBarEffect(bar)
     val colors = options.batteryLineColors.takeIf { options.batteryColors }
-    val line = BatteryLine(bar, batteryColor, colors, chargingAnimation, true, false, false)
+    val line = BatteryLine(bar, batteryColor, colors, chargingAnimation, true, false, false, widthDp = lineWidthDp)
     val stopCharge = Runnable { line.uninstall() }
     fun previewCharge(percent: Double) {
         bar.removeCallbacks(stopCharge)

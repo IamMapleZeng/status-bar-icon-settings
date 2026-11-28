@@ -33,6 +33,15 @@ class SettingsActivity : Activity() {
     private lateinit var speedThreshold: Button
     private var selectedSpeedThreshold: Int? = null
     private lateinit var batteryLine: Switch
+    private lateinit var batteryRing: Switch
+    private lateinit var ringColor: Button
+    private lateinit var ringAnimation: Button
+    private var selectedRingColor = DEFAULT_LINE_COLOR
+    private var selectedRingAnimation = RingChargingAnimation.OFF
+    private lateinit var lineWidth: Button
+    private lateinit var ringWidth: Button
+    private var selectedLineWidth = 2
+    private var selectedRingWidth = 2
     private lateinit var lineColor: Button
     private lateinit var chargingAnimation: Button
     private var selectedAnimation = ChargingAnimation.OFF
@@ -95,8 +104,42 @@ class SettingsActivity : Activity() {
 
         val line = settingsCard(content, R.string.section_line, filled = true)
         batteryLine = addToggle(line, R.string.battery_line)
+        batteryRing = addToggle(line, R.string.battery_ring)
         lineColor = addAction(line) { chooseLineColor() }
         chargingAnimation = addAction(line) { chooseChargingAnimation() }
+        ringColor = addAction(line) {
+            showColorPicker(this, R.string.choose_ring_color, selectedRingColor) {
+                selectedRingColor = it
+                updateRingButtons()
+                saveSettings()
+            }
+        }
+        ringAnimation = addAction(line) {
+            val names = resources.getStringArray(R.array.ring_animations)
+            AlertDialog.Builder(this).setTitle(R.string.ring_animation_title)
+                .setSingleChoiceItems(names, selectedRingAnimation.ordinal) { dialog, index ->
+                    selectedRingAnimation = RingChargingAnimation.entries[index]
+                    updateRingButtons()
+                    saveSettings()
+                    dialog.dismiss()
+                }.setNegativeButton(android.R.string.cancel, null).show()
+        }
+        lineWidth = addAction(line) {
+            chooseBatteryWidth(R.string.line_width_title, selectedLineWidth) {
+                selectedLineWidth = it
+                updateWidthButtons()
+                saveSettings()
+            }
+        }
+        ringWidth = addAction(line) {
+            chooseBatteryWidth(R.string.ring_width_title, selectedRingWidth) {
+                selectedRingWidth = it
+                updateWidthButtons()
+                saveSettings()
+            }
+        }
+        updateWidthButtons()
+        updateRingButtons()
         updateChargingButton()
         updateColorButton()
 
@@ -108,7 +151,7 @@ class SettingsActivity : Activity() {
 
         val advanced = settingsCard(content, R.string.section_advanced)
         optionsButton = addAction(advanced) {
-            showStatusBarOptions(this, options, selectedColor, selectedAnimation) {
+            showStatusBarOptions(this, options, selectedColor, selectedAnimation, selectedLineWidth) {
                 options = it
                 updateColorButton()
                 updateBatteryButtons()
@@ -118,7 +161,7 @@ class SettingsActivity : Activity() {
                 ) requestPermissions(arrayOf(android.Manifest.permission.READ_CALENDAR), 1)
             }
         }.apply { setText(R.string.status_bar_options) }
-        addAction(advanced) { showStatusBarPreview(this, options, selectedColor, selectedAnimation) }
+        addAction(advanced) { showStatusBarPreview(this, options, selectedColor, selectedAnimation, selectedLineWidth) }
             .apply { text = "模拟预览" }
         debug = addToggle(advanced, R.string.debug_logs)
         advanced.addView(TextView(this).apply {
@@ -236,6 +279,12 @@ class SettingsActivity : Activity() {
                     selectedSpeedThreshold = settings.networkSpeedThreshold
                     updateSpeedThresholdButton()
                     batteryLine.isChecked = settings.batteryLine
+                    batteryRing.isChecked = settings.batteryRing
+                    selectedRingColor = settings.batteryRingColor
+                    selectedRingAnimation = settings.ringAnimation
+                    selectedLineWidth = settings.batteryLineWidth
+                    selectedRingWidth = settings.batteryRingWidth
+                    updateWidthButtons()
                     options = settings.options
                     chargingPower.isChecked = options.chargingPower
                     selectedColor = settings.batteryLineColor
@@ -270,6 +319,11 @@ class SettingsActivity : Activity() {
             hideClock = hideClock.isChecked,
             networkSpeedThreshold = selectedSpeedThreshold,
             batteryLine = batteryLine.isChecked,
+            batteryRing = batteryRing.isChecked,
+            batteryRingColor = selectedRingColor,
+            ringAnimation = selectedRingAnimation,
+            batteryLineWidth = selectedLineWidth,
+            batteryRingWidth = selectedRingWidth,
             batteryLineColor = selectedColor,
             chargingAnimation = selectedAnimation,
             clockSeconds = clockSeconds.isChecked,
@@ -405,8 +459,64 @@ class SettingsActivity : Activity() {
         clockColor.setCompoundDrawablesRelative(color?.let(::colorSwatch), null, null, null)
     }
 
+    private fun chooseBatteryWidth(title: Int, current: Int, onSelect: (Int) -> Unit) {
+        val padding = dp(20)
+        val value = TextView(this).apply { text = getString(R.string.width_dp, current) }
+        val slider = android.widget.SeekBar(this).apply {
+            max = 5
+            progress = current - 1
+            contentDescription = getString(title)
+            setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(bar: android.widget.SeekBar, progress: Int, fromUser: Boolean) {
+                    value.text = getString(R.string.width_dp, progress + 1)
+                }
+                override fun onStartTrackingTouch(bar: android.widget.SeekBar) = Unit
+                override fun onStopTrackingTouch(bar: android.widget.SeekBar) = Unit
+            })
+        }
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(padding, padding / 2, padding, padding / 2)
+            addView(value)
+            addView(slider)
+        }
+        AlertDialog.Builder(this).setTitle(title).setView(content)
+            .setPositiveButton(android.R.string.ok) { _, _ -> onSelect(slider.progress + 1) }
+            .setNeutralButton(R.string.restore_default) { _, _ -> onSelect(2) }
+            .setNegativeButton(android.R.string.cancel, null).show()
+    }
+
+    private fun updateWidthButtons() {
+        lineWidth.text = getString(R.string.line_width_value, selectedLineWidth)
+        ringWidth.text = getString(R.string.ring_width_value, selectedRingWidth)
+    }
+
+    private fun updateRingButtons() {
+        ringColor.text = if (options.batteryColors) getString(R.string.ring_color_automatic)
+            else getString(R.string.ring_color, colorHex(selectedRingColor))
+        ringColor.setCompoundDrawablesRelative(
+            if (options.batteryColors) null else colorSwatch(selectedRingColor), null, null, null)
+        ringAnimation.text = getString(R.string.ring_animation_value,
+            resources.getStringArray(R.array.ring_animations)[selectedRingAnimation.ordinal])
+    }
+
     private fun updateBatteryButtons() {
         val enabled = batteryLine.isEnabled && batteryLine.isChecked
+        // Toggle callbacks can run before the remaining controls are created.
+        if (::ringColor.isInitialized && ::ringAnimation.isInitialized) {
+            val ringEnabled = batteryRing.isEnabled && batteryRing.isChecked
+            ringColor.isEnabled = ringEnabled && !options.batteryColors
+            ringAnimation.isEnabled = ringEnabled
+            ringColor.alpha = if (ringColor.isEnabled) 1f else 0.55f
+            ringAnimation.alpha = if (ringEnabled) 1f else 0.55f
+            updateRingButtons()
+        }
+        if (::lineWidth.isInitialized && ::ringWidth.isInitialized) {
+            lineWidth.isEnabled = enabled
+            ringWidth.isEnabled = batteryRing.isEnabled && batteryRing.isChecked
+            lineWidth.alpha = if (lineWidth.isEnabled) 1f else 0.55f
+            ringWidth.alpha = if (ringWidth.isEnabled) 1f else 0.55f
+        }
         lineColor.isEnabled = enabled && !options.batteryColors
         chargingAnimation.isEnabled = enabled
         lineColor.alpha = if (lineColor.isEnabled) 1f else 0.55f
@@ -422,6 +532,7 @@ class SettingsActivity : Activity() {
         speedThreshold.isEnabled = enabled
         speedThreshold.alpha = if (enabled) 1f else 0.55f
         batteryLine.isEnabled = enabled
+        batteryRing.isEnabled = enabled
         updateBatteryButtons()
         clockSeconds.isEnabled = enabled
         chargingPower.isEnabled = enabled

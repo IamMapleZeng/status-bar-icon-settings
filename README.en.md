@@ -48,9 +48,21 @@ Verify that Wi-Fi and mobile data still connect and that the icon settings apply
 3. You can also hide the battery icon and use the line as the battery indicator. Pick another color and verify that it applies.
 4. Rotate the phone and open a full-screen app. The line follows the status bar's visibility. Turn off the battery line and verify that it disappears.
 
+### Camera battery ring
+
+The **Battery display** section includes a **Ring display** switch directly below the battery line switch. It defaults to off. The line and ring can be enabled separately or together. The clockwise arc starts at the top and represents remaining battery capacity, with a faint full-capacity track.
+
+Line and ring thickness can be adjusted separately from 1 to 6 dp. Both default to 2 dp and have a reset option. Charging animations follow their respective thickness settings. A thicker ring expands outward to preserve clearance around the camera.
+
+The ring has its own color. Battery level colors override both the line and ring colors using the same thresholds and palette. Disabling battery level colors restores their individual colors.
+
+Ring charging animations include Off, Sweep, Comet Trail, Breathing Glow, Dual Sweep, Wave, and Rainbow. The battery line also supports Rainbow. Rainbow colors flow during charging and return to the custom color or battery level palette when the animation stops. They play while charging with the screen on, and return to a static battery arc when charging stops.
+
+The Xiaomi 15 Ultra (`xuanyuan`) uses the system's top camera cutout reservation in portrait orientation, converted to local status bar coordinates. Placement follows system coordinates across resolutions. The ring hides in landscape or when the cutout cannot be identified. This ROM supplies a rectangular reservation, so its center is used as the default camera center. Alignment with the physical camera edge still requires on-device visual verification.
+
 ### Charging animations
 
-With the battery line enabled, open the charging animation setting. Options include Off, Gradient Sweep, Wave, Comet Trail, Dual Sweep, and Breathing Glow. The default is Off.
+With the battery line enabled, open the charging animation setting. Options include Off, Gradient Sweep, Wave, Comet Trail, Dual Sweep, Breathing Glow, and Rainbow. The default is Off.
 
 - Gradient Sweep moves a brighter, thicker highlight along the 2 dp line. The highlight reaches about 5 dp at its thickest point.
 - Wave moves rounded peaks and troughs along the line. The legacy ECG setting automatically maps to Wave.
